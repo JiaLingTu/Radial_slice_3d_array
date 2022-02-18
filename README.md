@@ -43,7 +43,7 @@ intersections = enface.intersection(lineObj)
 ```
 > Note: The order of the intersections is sorted by the x-value of the points.  
 
-### New axis on the slice
+### points representing the slice
 The we use the boundary points to define a new index sequence representing the 
 positions of the slicing images.
 
