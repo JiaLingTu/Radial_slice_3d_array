@@ -1,4 +1,4 @@
-# Radial_slice_3d_array
+# Radial slice on 3D numpy array
 
 ![python3.7](https://img.shields.io/badge/python-3.7-green.svg)
 
