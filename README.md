@@ -27,6 +27,28 @@ value = my_interpolating_function(point)
 ## 2. Slice 
 We want to take the radial slice around the center point lied on z=0 plane, and take the z-axis as the rotation axis. 
 The following image is the examples which is refer to [documentations of pyvista](https://docs.pyvista.org/examples/01-filter/slicing.html).
-| | |
-|:--:|:--:|
-||![examples](./doc/slice.png)|
+
+![examples](./doc/slice.png)
+
+### Boundary points on xy-plane
+We define the geometric objects (lines, rotated lines, frame) with [Shapely](https://shapely.readthedocs.io/en/stable/manual.html).  
+Then take the two interseions as the boundary of the slice image. 
+```sh
+# xy- plane frame
+enface = LineString([(0, 0), (0, nc-1), (nb-1, nc-1), (nb-1,0), (0,0)])
+# horizontal line
+lineObj = LineString( [(0-100, rotate_center[1]),(nb+100, rotate_center[1])] )
+# intersectiona
+intersections = enface.intersection(lineObj)
+```
+> Note: The order of the intersections is sorted by the x-value of the points.  
+
+### New axis on the slice
+The we use the boundary points to define a new index sequence representing the 
+positions of the slicing images.
+
+```sh
+# xy- plane frame
+index_x = np.linspace(p1x, p2x, output_w, dtype=np.float16)
+index_y = np.linspace(p1y, p2y, output_w, dtype=np.float16)
+```
