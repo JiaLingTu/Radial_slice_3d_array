@@ -1,4 +1,4 @@
-# Radial_slice_3d_array
+# Radial slice on 3D numpy array
 
 ![python3.7](https://img.shields.io/badge/python-3.7-green.svg)
 
@@ -26,7 +26,7 @@ value = my_interpolating_function(point)
 
 ## 2. Slice 
 We want to take the radial slice around the center point lied on z=0 plane, and take the z-axis as the rotation axis. 
-The following image is the examples which is refer to [documentations of pyvista](https://docs.pyvista.org/examples/01-filter/slicing.html).
+The following image is the examples which refer to [documentations of pyvista](https://docs.pyvista.org/examples/01-filter/slicing.html).
 
 ![examples](./doc/slice.png)
 
