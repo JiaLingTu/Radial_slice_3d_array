@@ -1,10 +1,36 @@
+#%%
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator
 from shapely.geometry import LineString
 from shapely import affinity
+from matplotlib import pyplot as plt
 
-def RadialSlice(volume, rotate_center, angle, output_size=(512,512)):    
+def RadialSlice(volume, rotate_center, angle, output_size=(512,512)):
+    """
+    Slice a 3d-array with radial line. 
+    The rotate axis is z-axis, and the rotation center is on xy-plane.
+
+    Parameters
+    ----------
+    volume : ndnarray
+        The shape of volume must be (z, x, y).
+    rotate_center : tuple
+        The rotation center.
+    angle : int, float, or list
+        Should be a number or alist of number.
+        If angle is a number, then we will slice the 3d-array every (angle) degrees.
+        Or you can set the slice angles by given a sequences.
+    output_size : tuple, optional
+        Number of pixels to resample the radial sampling slices. 
+        
+    Returns
+    -------
+    Slices : Nested Dict.
+    You could access each slice image by Slices[i]['img'] where i is a number such as 0,1,2 ...
+    """
+    # length of line is not long enough when rotating it, line_buffer makes line longer to intersect with the frame
     line_buffer = 100
+    
     # define axis
     nc, na, nb = volume.shape
     c = np.linspace(0, nc-1, nc)
@@ -71,17 +97,13 @@ def RadialSlice(volume, rotate_center, angle, output_size=(512,512)):
         slc = slc.reshape(output_size)
 
         Slices[i] = {
-            'angle': angle_list[i],
-            'slc': slc,
-            'rotate_center': rotate_center,
-            'cu_on_slc': left_length,
-            'shape': slc_length,
-            'intersections': intersections,
-            'index_x': index_x,
-            'index_y':index_y,
+            'img': slc,
         }
 
     return Slices
 
 if __name__=="__main__":
-    img = np.random.random((64, 64, 64))
+    vol = np.random.random((64, 64, 64))
+    slices = RadialSlice(volume=vol, rotate_center=(10, 20), angle=15, output_size=(64, 64))
+    plt.imshow(slices[0]['img'])
+# %%
