@@ -63,7 +63,7 @@ def RadialSlice(volume, rotate_center, angle, output_size=(512,512)):
         intersections = enface.intersection(line_rot)
         if angle_list[i]<=90:
             p1, p2 = [(pt.x, pt.y) for pt in intersections.geoms]
-        else :  # 為了讓照片都是從左邊畫到右邊, 阿不然超過90度的旋轉影像都會有一個flip
+        else :  # since the order of the intersections is sorted by the x-value of the points.
             p2, p1 = [(pt.x, pt.y) for pt in intersections.geoms]
         p1x, p1y = p1
         p2x, p2y = p2
@@ -81,17 +81,6 @@ def RadialSlice(volume, rotate_center, angle, output_size=(512,512)):
         
         pts = np.stack((index_yz, index_z, index_xz ), axis=-1)
         
-        # shape
-        slc_length = np.power(np.power(p2x-p1x, 2) + np.power(p2y-p1y, 2), 0.5)
-        # get rotate center on slice image
-        
-        if p2x-p1x:
-            left_length = (rotate_center[0]-p1x)/abs(p2x-p1x) * output_w
-        else:
-            left_length = (rotate_center[1]-p1y)/abs(p2y-p1y) * output_w
-        left_length = int(left_length)
-        # 乘乘除除之後 290可能會變成 290.76 會有問題, 之後看看保留浮點數勒?
-
         # Slices
         slc = my_interpolating_function(pts)
         slc = slc.reshape(output_size)
