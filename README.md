@@ -26,29 +26,32 @@ value = my_interpolating_function(point)
 
 ## 2. Slice 
 We want to take the radial slice around the center point lied on z=0 plane, and take the z-axis as the rotation axis. 
-The following image is the examples which refer to [documentations of pyvista](https://docs.pyvista.org/examples/01-filter/slicing.html).
-
 ![examples](./doc/slice.png)
 
-### Boundary points on xy-plane
-We define the geometric objects (lines, rotated lines, frame) with [Shapely](https://shapely.readthedocs.io/en/stable/manual.html).  
-Then take the two interseions as the boundary of the slice image. 
+### Get interpolation points for radial slicing
+Based on the regular interpolation function we mentioned above, we can resample the given point by using that Interpolator.
+Now, we need to generate the coordinates lied on the radial slicing line (red line on the figure below).
+We define two endpoints to represent the horizontal line passing through the center point (user-chosen), like this:
 ```sh
-# xy- plane frame
-enface = LineString([(0, 0), (0, nc-1), (nb-1, nc-1), (nb-1,0), (0,0)])
-# horizontal line
-lineObj = LineString( [(0-100, rotate_center[1]),(nb+100, rotate_center[1])] )
-# intersectiona
-intersections = enface.intersection(lineObj)
+buffer = 50 # avoid there's no intersection between the line and the rectangle
+a1 = np.array([0-buffer, 89])
+a2 = np.array([512+buffer, 89])
 ```
-> Note: The order of the intersections is sorted by the x-value of the points.  
-
-### points representing the slice
-The we use the boundary points to define a new index sequence representing the 
-positions of the slicing images.
-
+Then, define the vertex of the rectangle by the list of points
 ```sh
-# xy- plane frame
-index_x = np.linspace(p1x, p2x, output_w, dtype=np.float16)
-index_y = np.linspace(p1y, p2y, output_w, dtype=np.float16)
+np.array([0, 0), (0, 127), (511, 127), (511,0), (0,0)])
+```
+We use vectors to find the intersection between tweo line (line and one side of the rectangle) and record those points as endpoint.
+```sh
+endpoint1 = (0, 89)
+endpoint2 = (511, 89)
+x = np.linspace(endpoint1[0], endpoint2[0], output_w)
+y = np.linspace(endpoint1[1], endpoint2[1], output_w)
+# elements of the x and y represent the red line.
+```
+Since points on the red line will duplicate on each z-plane, 
+we only need to give the element represent z.
+```sh
+index_z = np.linspace(0, output_w-1, output_w, dtype=np.float16)
+index_z = np.repeat(index_z.reshape(-1,1), output_h)
 ```

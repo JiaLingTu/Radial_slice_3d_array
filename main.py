@@ -3,47 +3,6 @@ import numpy as np
 from scipy.interpolate import RegularGridInterpolator
 from matplotlib import pyplot as plt
 
-def coords_img2vol(annotated_points, slc):
-    """
-    This function is to convert the points which is on the image plane
-    to the top-face plane. 
-
-    Parameters
-    ----------
-    annotated_points : tuple, list, ndarray
-        Keypoints found on slicing image.
-        
-    slc : Dict
-        Dict object which records information about each slicing image.
-
-    Returns
-    -------
-    list
-        Coordinate on top-face.
-
-    """
-    if not np.any(annotated_points) :
-        return [0,0]
-    # p1, p2 are endpoints of the slicing line
-    p1x, p1y = slc['p1']
-    p2x, p2y = slc['p2']
-
-    # index_x, index_y
-    output_w, output_h = slc['slc'].shape
-    index_x = np.linspace(p1x, p2x, output_w, dtype=np.float16)
-    index_y = np.linspace(p1y, p2y, output_w, dtype=np.float16)
-    
-    # interp method1
-    point_u, point_v = annotated_points
-    point_b = index_x[point_u]
-    point_c = index_y[point_u]
-    
-    # interp method2
-    # 要比一下精度準確度 目前是method1比較準但why...?
-    t = (point_u+1) / output_w
-    point_b_2, point_c_2 = (1-t) * np.array(slc['p1']) + t * np.array(slc['p2'])
-    
-    return [point_b, point_c]
 
 def get_intersect(a1, a2, b1, b2):
     """ 
@@ -244,9 +203,13 @@ def RadialSlice(volume, angle, rotate_center=None, output_size=(512,512)):
 
     return Slices
 
+def plot_radial(img, S):
+    plt.figure()
+    for i in range(len(S)):
+        plt.plot(np.linspace(S[i]['p1'][0], S[i]['p2'][0], 100), np.linspace(S[i]['p1'][-1], S[i]['p2'][-1], 100), 'r')   
+    plt.imshow(img)
 
 if __name__=="__main__":
     vol = np.random.random((128, 512, 512))
     slices = RadialSlice(volume=vol, rotate_center=(10, 20), angle=15, output_size=(64, 64))
     plt.imshow(slices[0]['img'])
-# %%
