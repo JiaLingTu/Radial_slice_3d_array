@@ -1,107 +1,8 @@
 #%%
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator
-from matplotlib import pyplot as plt
-
-
-def get_intersect(a1, a2, b1, b2):
-    """ 
-    Returns the point of intersection of the lines passing through a2,a1 and b2,b1.
-    a1: [x, y] a point on the first line
-    a2: [x, y] another point on the first line
-    b1: [x, y] a point on the second line
-    b2: [x, y] another point on the second line
-    """
-    s = np.vstack([a1,a2,b1,b2])        # s for stacked
-    h = np.hstack((s, np.ones((4, 1)))) # h for homogeneous
-    l1 = np.cross(h[0], h[1])           # get first line
-    l2 = np.cross(h[2], h[3])           # get second line
-    x, y, z = np.cross(l1, l2)          # point of intersection
-    if z == 0:                          # lines are parallel
-        return (float('inf'), float('inf'))
-    return (np.around(x/z), np.around(y/z))
-
-def rotate_points(point, center_point, angle):
-    """
-    Rotate points about a center point by specific angle.
-
-    Parameters
-    ----------
-    point : ndarray
-        Point need to be rotated.
-    center_point : ndarray
-        The rotate center for other points.
-    angle : float, int
-        Rotate angle.
-
-    Returns
-    -------
-    ndarray
-        Result point.
-
-    """
-    point = point - center_point
-    rotate_matrix = np.array([[np.cos(angle*np.pi/180), -np.sin(angle*np.pi/180)],
-                              [np.sin(angle*np.pi/180), np.cos(angle*np.pi/180)]])
-    new_point = rotate_matrix.dot(point)
-    return new_point + center_point
-
-def intersect_line_rect(line, rect):
-    """
-    Find the intersection of a line and a rectangle.
-    Line represents the slicing line on the top-face plane, and 
-    Rectangular represents the frame of the top-face plane.
-            En-face:
-            (0,0)                                 (511,0)
-            ----------------------------------------
-            |                                      |
-            |                                      |
-            |                                      |
-      (0,64)|__________________line________________|(511,64)
-            |                                      |
-            |                                      |
-            |                                      |
-            |                                      |
-            ----------------------------------------
-            (0, 127)                            (511, 127)
-
-    Parameters
-    ----------
-    line : ndarray
-        The endpoints of this line.
-        Ex: line= np.array([(0,64), (511,64)])
-    rect : ndarray
-        The vertex of the rectangle.
-        And the first point shold repeat again on the last element.
-        Ex: rect = np.array([0, 0), (0, 127), (511, 127), (511,0), (0,0)])
-
-    Returns
-    -------
-    intersection : list
-        The coordinate of the intersection.
-
-    """
-    intersection = []
-    constraint = rect[2]
-    a1, a2 = line
-    for i in range(len(rect)-1):
-        b1, b2 = rect[i], rect[i+1]
-        res = get_intersect(a1, a2, b1, b2)
-        if res == (np.inf, np.inf):
-            pass
-        elif res[0] < 0 or res[0] > constraint[0] or res[1] < 0 or res[1] > constraint[1]:
-            pass
-        else:
-            intersection.append(get_intersect(a1, a2, b1, b2))
-            
-    return intersection
-
-def sort_tuple(tuple_List):
-    if len(tuple_List)==1: # 不需要排序
-        pass
-    else:
-        tuple_List.sort()
-    return tuple_List
+# import cProfile
+import utils
 
 def RadialSlice(volume, angle, rotate_center=None, output_size=(512,512)):
     """
@@ -132,44 +33,38 @@ def RadialSlice(volume, angle, rotate_center=None, output_size=(512,512)):
             'p2': p2,   # second endpoint of radial slicing line
 
     """
-    line_buffer = 100
     # define axis
     nc, na, nb = volume.shape
     c = np.linspace(0, nc-1, nc)
     a = np.linspace(0, na-1, na)
-    b = np.linspace(0, nb-1, nb)   
+    b = np.linspace(0, nb-1, nb)
     
     # define an interpolating function from this volume
     my_interpolating_function = RegularGridInterpolator((c, a, b), volume)
-    # Inintial horizontal line (one b-scan)
-    if rotate_center is not None:
-        a1 = np.array([0-line_buffer, rotate_center[1]])
-        a2 = np.array([nb+line_buffer, rotate_center[1]])
-    else:
-        a1 = np.array([0-line_buffer, nc//2])
-        a2 = np.array([nb+line_buffer, nc//2])
     
     # 可以自己輸入角度序列
     if isinstance(angle, int) or isinstance(angle, float):
         angle_list = np.arange(0, 180, angle )
     else :
         angle_list = list(angle)
-    
-    
-    Slices = {}
-    for i in range(len(angle_list)):
+    slope_list = [np.tan(i*np.pi/180) for i in angle_list]
+    if rotate_center is None:
+        rotate_center = (nb//2, nc//2)
         
-        # Rotated line LinString
-        new_a1 = rotate_points(point=a1, center_point=rotate_center, angle=angle_list[i])
-        new_a2 = rotate_points(point=a2, center_point=rotate_center, angle=angle_list[i])
-
-        # intersection
-        intersections = intersect_line_rect(line=[new_a1, new_a2] , rect=[(0, 0), (0, nc-1), (nb-1, nc-1), (nb-1,0), (0,0)])
-        print('angle{}:{}'.format(angle_list[i], intersections))
+    Slices = {}
+    # pr = cProfile.Profile()
+    # pr.enable()  
+    for i in range(len(slope_list)):
+        intersections = utils.intersect_line_rect2(contrain=(nb-1, nc-1), rotate_center=rotate_center, m=slope_list[i])
+    # pr.disable()    
+    # pr.print_stats()
+        if len(intersections)!=2:
+            raise ValueError
+    
         if angle_list[i] == 0:
             p1, p2 = intersections
         elif angle_list[i] < 90:
-            p1, p2 = sort_tuple(intersections)
+            p1, p2 = utils.sort_tuple(intersections)
         else :  # 為了讓照片都是從左邊畫到右邊, 阿不然影像會有一個flip
             p2, p1 = intersections
         p1x, p1y = p1
@@ -201,15 +96,11 @@ def RadialSlice(volume, angle, rotate_center=None, output_size=(512,512)):
             'p2': p2,
         }
 
-    return Slices
+    return Slices        
 
-def plot_radial(img, S):
-    plt.figure()
-    for i in range(len(S)):
-        plt.plot(np.linspace(S[i]['p1'][0], S[i]['p2'][0], 100), np.linspace(S[i]['p1'][-1], S[i]['p2'][-1], 100), 'r')   
-    plt.imshow(img)
+
 
 if __name__=="__main__":
     vol = np.random.random((128, 512, 512))
-    slices = RadialSlice(volume=vol, rotate_center=(10, 20), angle=15, output_size=(64, 64))
-    plt.imshow(slices[0]['img'])
+    slices = RadialSlice(volume=vol, rotate_center=(289, 78), angle=15, output_size=(64, 64))
+    utils.plot_radial(vol.sum(2), slices)
